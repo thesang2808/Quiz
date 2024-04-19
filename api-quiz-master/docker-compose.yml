@@ -1,0 +1,56 @@
+version: '3'
+
+#Docker Networks
+networks:
+  mongodb-network:
+    name: mongodb_network
+    driver: bridge
+  cache-network:
+    name: cache_network
+    driver: bridge
+    
+services:
+  api-quiz:
+    image: api-quiz
+    build: .
+    container_name: $API_QUIZ_CONTAINER_NAME
+    hostname: $API_QUIZ_HOST_NAME
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    ports:
+      - $API_QUIZ_LOCAL_PORT:$API_QUIZ_DOCKER_PORT
+    depends_on:
+      - mongodb
+    networks:
+      - mongodb-network
+      - cache-network
+
+  mongodb:
+    image: mongo:4.4.14
+    restart: unless-stopped
+    container_name: $MONGODB_CONTAINER_NAME
+    hostname: $MONGODB_HOST_NAME
+    env_file: 
+      - ./.env
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=$MONGO_INITDB_ROOT_USERNAME
+      - MONGO_INITDB_ROOT_PASSWORD=$MONGO_INITDB_ROOT_PASSWORD
+    ports:
+      - $MONGODB_LOCAL_PORT:$MONGODB_DOCKER_PORT
+    volumes:
+      - .docker/data/db:/data/db
+    networks:
+      - mongodb-network
+
+  redis:
+    image: redis:5-alpine
+    container_name: $REDIS_CONTAINER_NAME
+    hostname: $REDIS_HOST_NAME
+    ports:
+     - $REDIS_LOCAL_PORT:$REDIS_DOCKER_PORT
+    volumes:
+      - .docker/data/redis:/data
+    restart: unless-stopped
+    networks:
+      - cache-network
